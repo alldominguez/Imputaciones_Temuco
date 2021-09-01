@@ -1,0 +1,109 @@
+---
+title: ""
+author: "Alan Domínguez Montoya"
+date: "7/13/2021"
+output: html_document
+---
+
+# Multiple Imputation Case Study : Temuco, Chile.
+
+### Introducción
+
+Este proyecto tiene como finalidad reproducir el análisis y reconstrucción de una base de datos de calidad del aire para estaciones de monitoreo de calidad del aire con una gran cantidad de datos perdidos, basandose en el articulo "Use of data imputation tools to reconstruct incomplete air quality datasets: A case-study in Temuco, Chile", mediante el uso del Software estadístico Rstudio.
+
+Se utilizaran 5 aproximaciones estadisticas distintas (i) single imputation, (ii) conditional mean imputation (iii) k-nearest neighbor imputation, (iv) multiple imputation y (v) bayesian principal component analysis imputation.
+
+Primero cargamos todas las librerias que utilizaremos.
+
+```{r , librerias}
+
+install.packages(c("paquete1", "paquete2", "paquete3"))
+
+#creamos un objeto con todas nuestras librerias
+paquetes_project_imputacion <- c("tidyverse","haven","naniar","visdat","dlookr",
+                                 "skimr", )
+
+#cargamos solo los paquetes que necesitamos
+lapply(paquetes_project_imputacion, require, character.only = TRUE)
+
+
+```
+
+Primero cargamos la base de datos que se utilizara para el proyecto.
+
+```{r, database }
+base_inicial <- read.csv("~/Desktop/Github_Proyectos/Multiple_Imputation-Temuco/00_Bases-de-datos/base_inicial.csv")
+```
+
+### Exploratory Data Analysis (EDA)
+
+Hacemos un análisis exploratorio de algunas variables de interes para ver la estructura de nuestras variables.
+
+```{r}
+base_inicial %>%
+  dplyr::select(PM25LLEE, PM10LLEE, fecha, year) %>% 
+  summary()
+```
+
+Es necesario generar una nueva variable de Fecha, para utilizarla como una variable "Date" en nuestros futuros análisis, ya que se encuentra como variable de tipo "character".
+
+```{r}
+library(lubridate)
+?strptime #nos permite ver todos los formatos de fecha
+
+#creamos una nueva columna date, con los datos de Fecha (COMBINANDO), solo si tenemos Año, Mes y Dia en columnas separadas.
+base_inicial <- base_inicial %>%
+  mutate(Fecha = make_date( year, month, day)) 
+
+class(base_inicial$fecha) #revisamos el formato inicial
+class(base_inicial$Fecha) #revisamos el formato de la variable generada
+
+#grafico de series de tiempo PM2,5
+base_inicial %>%
+  dplyr::select(PM25LLEE, Fecha, year) %>%
+  ggplot2::ggplot(mapping= aes( x= Fecha,
+                                y= PM25LLEE)) + geom_point() + theme_light() +
+  naniar::geom_miss_point() #nos permite ver los datos perdidos en nuestra serie de tiempo
+```
+
+### Diagnóstico de datos perdidos
+
+De acuerdo al grafico anterior podemos ver que existen valores perdidos en nuestra variable independiente (PM2,5), por lo tanto realizaremos un diagnostico de los datos perdidos que existen en nuestra base de datos.
+
+Hacemos un resumen anual de las variables de interes, para cada uno de los años de estudio 2009 - 2014.
+
+```{r}
+base_inicial %>%
+  dplyr::select(PM25LLEE, PM10LLEE, PM25MMFF, PM10MMFF, year) %>%
+  dplyr::group_by(year) %>%
+  skimr::skim()
+```
+
+Visualizamos el **mecanismo de perdida de datos** (MCAR, MAR , MNAR).
+
+```{r}
+base_inicial %>%
+  dplyr::select(PM25LLEE, PM10LLEE, PM25MMFF, PM10MMFF) %>%
+  visdat::vis_miss(cluster= TRUE)
+
+```
+
+Visualizamos la perdida de datos en la variable de interes por los años del estudio.
+
+```{r}
+base_inicial %>%
+  dplyr::select(PM25LLEE, PM10LLEE, PM25MMFF, PM10MMFF, year) %>%
+  naniar::gg_miss_var(facet = year )
+
+base_inicial %>%
+  dplyr::select(PM25LLEE, PM10LLEE, PM25MMFF, PM10MMFF, year) %>%
+  naniar::gg_miss_fct(fct = year)
+```
+
+### RESULTADOS
+
+Tabla 1
+
+```{r}
+
+```
